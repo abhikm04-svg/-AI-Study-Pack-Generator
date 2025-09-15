@@ -1,0 +1,8 @@
+streamlit
+google-generativeai
+pypdf2
+python-docx
+python-pptx
+markdown2
+pdfkit
+graphviz
