@@ -100,7 +100,7 @@ if st.button("Generate Study Pack", type="primary", use_container_width=True):
         # --- 2. Generate Comprehensive Notes ---
         with st.status("Step 2/4: Generating comprehensive notes with AI...", expanded=True) as status:
             try:
-                text_model = genai.GenerativeModel(model_name='gemini-1.5-pro-latest', system_instruction=system_message)
+                text_model = genai.GenerativeModel(model_name='gemini-2.5-pro', system_instruction=system_message)
                 notes_prompt = f"Please take the following extracted class notes and expand them into a detailed, comprehensive document. For each key point, provide detailed explanations, include concrete examples, and organize the information logically.\n\n---\n{final_extracted_content}\n---"
                 final_response = text_model.generate_content(notes_prompt, request_options={'timeout': 600})
                 generated_notes = final_response.text
