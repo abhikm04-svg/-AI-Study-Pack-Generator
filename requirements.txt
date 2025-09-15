@@ -1,6 +1,6 @@
 streamlit
 google-generativeai
-pypdf2
+pymupdf
 python-docx
 python-pptx
 markdown2
