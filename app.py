@@ -24,7 +24,6 @@ st.set_page_config(
 )
 
 # --- Initialize Session State ---
-# This ensures variables persist between reruns
 if 'generation_complete' not in st.session_state:
     st.session_state.generation_complete = False
 if 'notes_pdf' not in st.session_state:
@@ -67,11 +66,9 @@ if api_key:
         if uploaded_files:
             # --- 1. Content Extraction ---
             with st.status("Step 1/4: Extracting content...", expanded=True) as status:
-                # (Extraction logic is the same)
                 final_extracted_content = ""
                 images_for_processing = []
                 for uploaded_file in uploaded_files:
-                    # ... (file processing logic) ...
                     st.write(f"Processing: {uploaded_file.name}")
                     if uploaded_file.type == "application/pdf":
                         pdf_bytes = uploaded_file.getvalue()
@@ -114,7 +111,17 @@ if api_key:
                 time.sleep(20)
                 mindmap_prompt = f"Analyze the following text and generate a structural mind map in Graphviz DOT language...\nText:\n---\n{generated_notes}"
                 mindmap_response = text_model.generate_content(mindmap_prompt)
-                dot_code = re.sub(r'```dot\s*|```', '', mindmap_response.text).strip()
+                
+                # ✅ **FIX APPLIED HERE: Robustly extract the DOT code**
+                dot_code = None
+                # Use regex to find content between ```dot and ```
+                match = re.search(r"```dot\s*([\s\S]*?)\s*```", mindmap_response.text, re.MULTILINE)
+                if match:
+                    dot_code = match.group(1).strip()
+                else:
+                    st.error("Could not find valid DOT code in the AI's response for the mind map. Please try again.")
+                    st.stop()
+                
                 status.update(label="Mind map created!", state="complete")
 
             # --- 4. Prepare and Store in Session State ---
@@ -123,19 +130,19 @@ if api_key:
                 html_text = markdown2.markdown(generated_notes, extras=["tables", "fenced-code-blocks", "code-friendly"])
                 html_with_style = f'<html><head><meta charset="utf-8"><style>body{{font-family: Arial, sans-serif;}}</style></head><body>{html_text}</body></html>'
                 pdf_bytes = pdfkit.from_string(html_with_style, False, options={"enable-local-file-access": ""})
-                st.session_state.notes_pdf = pdf_bytes # Save to state
+                st.session_state.notes_pdf = pdf_bytes
 
                 # Create Mind Map in memory
                 src = graphviz.Source(dot_code)
                 png_bytes = src.pipe(format='png')
-                st.session_state.mind_map_png = png_bytes # Save to state
+                st.session_state.mind_map_png = png_bytes
                 
-                st.session_state.generation_complete = True # Set flag
+                st.session_state.generation_complete = True
                 status.update(label="Downloads are ready!", state="complete")
         else:
             st.warning("Please upload your notes to get started.")
 
-# --- Display Results and Download Buttons (if generation is complete) ---
+# --- Display Results and Download Buttons ---
 if st.session_state.generation_complete:
     st.header("Your Study Pack is Ready!", divider="rainbow")
     col1, col2 = st.columns(2)
@@ -144,7 +151,7 @@ if st.session_state.generation_complete:
         st.subheader("📝 Generated Notes (PDF)")
         st.download_button(
             label="Download Notes PDF",
-            data=st.session_state.notes_pdf, # Download from state
+            data=st.session_state.notes_pdf,
             file_name="Generated_Notes.pdf",
             mime="application/pdf",
             use_container_width=True
@@ -152,15 +159,14 @@ if st.session_state.generation_complete:
 
     with col2:
         st.subheader("🗺️ Concept Mind Map")
-        st.image(st.session_state.mind_map_png) # Display from state
+        st.image(st.session_state.mind_map_png)
         st.download_button(
             label="Download Mind Map PNG",
-            data=st.session_state.mind_map_png, # Download from state
+            data=st.session_state.mind_map_png,
             file_name="Concept_Mind_Map.png",
             mime="image/png",
             use_container_width=True
         )
 else:
-    # This message shows if the API key is not in secrets and the user hasn't entered one yet.
     if not api_key:
         st.info("Please provide an API key to use the app.")
