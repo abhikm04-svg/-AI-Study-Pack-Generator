@@ -90,7 +90,7 @@ if st.button("Generate Study Pack", type="primary", use_container_width=True):
                     images_for_processing.append(Image.open(uploaded_file))
             
             if images_for_processing:
-                vision_model = genai.GenerativeModel('gemini-pro-vision')
+                vision_model = genai.GenerativeModel('gemini-2.5-pro')
                 vision_response = vision_model.generate_content(["Transcribe all handwritten text in these images accurately."] + images_for_processing)
                 final_extracted_content += "\n" + vision_response.text
             
